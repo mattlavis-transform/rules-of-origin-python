@@ -22,5 +22,8 @@
 ## Usage
 
 ### To create a JSON file from an original Word document:
-`python3 create.py`
+`python3 create.py <filename> <agreement>`
 
+e.g. 
+
+`python3 create.py roo_uk_eu eu`

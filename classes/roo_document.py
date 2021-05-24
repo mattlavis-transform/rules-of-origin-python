@@ -3,7 +3,7 @@ import docx
 import json
 import sys
 import os
-
+import shutil
 
 class RooDocument(object):
     def __init__(self):
@@ -62,3 +62,5 @@ class RooDocument(object):
         f = open(self.dest, "w+")
         f.write(json_string)
         f.close()
+
+        shutil.copy(self.dest, "/Users/matt.admin/sites and projects/1. Online Tariff/ott prototype/app/data/roo/eu.json")
