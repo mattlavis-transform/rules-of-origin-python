@@ -7,17 +7,7 @@
   `python3 -m venv venv/`
   `source venv/bin/activate`
 
-- Install necessary Python modules 
-
-  - autopep8==1.5.7
-  - lxml==4.6.3
-  - marshmallow==3.11.1
-  - pycodestyle==2.7.0
-  - python-docx==0.8.10
-  - python-dotenv==0.17.1
-  - toml==0.10.2
-
-  via `pip3 install -r requirements.txt`
+- Install necessary Python modules via `pip3 install -r requirements.txt`
 
 ## Usage
 
