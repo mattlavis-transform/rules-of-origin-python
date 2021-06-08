@@ -4,6 +4,8 @@ import json
 import sys
 import os
 import shutil
+from dotenv import load_dotenv
+
 
 class RooDocument(object):
     def __init__(self):
@@ -62,5 +64,10 @@ class RooDocument(object):
         f = open(self.dest, "w+")
         f.write(json_string)
         f.close()
+        
+        load_dotenv('.env')
+        self.roo_folder = os.getenv('ROO_FOLDER')
 
-        shutil.copy(self.dest, "/Users/matt.admin/sites and projects/1. Online Tariff/ott prototype/app/data/roo/eu.json")
+        # shutil.copy(self.dest, "/Users/matt.admin/sites and projects/1. Online Tariff/ott prototype/app/data/roo/eu.json")
+        dest_filename = os.path.join(self.roo_folder, "eu.json")
+        shutil.copy(self.dest, dest_filename)
