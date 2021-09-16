@@ -1,4 +1,5 @@
 # Retrieve rules of origin from a Word document
+Used to extract UK ())not EU) rules of origin from a Word document and insert into DB / JSON
 
 ## Implementation steps
 
