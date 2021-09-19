@@ -19,3 +19,4 @@ Used to extract UK ())not EU) rules of origin from a Word document and insert in
 e.g. 
 
 `python3 create.py roo_uk_eu eu`
+`python3 create.py roo_uk_turkey turkey`

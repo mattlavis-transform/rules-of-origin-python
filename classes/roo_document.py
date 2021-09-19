@@ -35,6 +35,7 @@ class RooDocument(object):
     def get_config(self):
         # Get variables from the env file
         load_dotenv('.env')
+        self.max_row_count = int(os.getenv('MAX_ROW_COUNT'))
         self.scheme_file = os.getenv('SCHEME_FILE')
         self.fetch_descriptions = os.getenv('FETCH_DESCRIPTIONS')
         self.exemplar_codes_path = os.getenv('EXEMPLAR_CODES_PATH')
@@ -64,6 +65,7 @@ class RooDocument(object):
                 # if item["code"].upper() == self.agreement.upper():
                 self.rule_offset = item["rule_offset"]
                 self.country_prefix = item["scheme_code"]
+                self.country_code = item["country_code"]
                 break
 
     def create(self):
@@ -74,9 +76,10 @@ class RooDocument(object):
 
         keys = None
         for i, row in enumerate(table.rows):
-            table_cell = TableCell(self.rule_offset, self.fetch_descriptions)
+            table_cell = TableCell(self.rule_offset, self.fetch_descriptions, self.country_code, self.country_prefix, i + 1)
 
             table_cell.cell_classification = row.cells[0].text
+            table_cell.cell_classification = table_cell.cell_classification.replace("\n", "")
             table_cell.cell_description = row.cells[1].text
             table_cell.cell_specific = row.cells[2].text
             table_cell.cell_psr = row.cells[3].text
@@ -88,8 +91,8 @@ class RooDocument(object):
                     table_cells.append(table_cell)
                     self.rule_offset += 1
 
-            if i > 20:
-                break
+            if i > self.max_row_count:
+                 break
 
         # Sort the rules by low code
         table_cells.sort(key=lambda x: x.key_first, reverse=False)
@@ -97,10 +100,14 @@ class RooDocument(object):
         # Fill in the missing key_last values
         for i in range(0, len(table_cells) - 1):
             tc = table_cells[i]
-            tc2 = table_cells[i + 1]
+            tc2 = table_cells[i]
+            if "09.01" in tc.cell_classification:
+                a = 1
             if tc.key_last is None:
                 if tc.key_first[-6:] == "000000":
                     tc.key_last = tc.key_first[0:4] + "999999"
+                elif tc.key_first[-4:] == "0000":
+                    tc.key_last = tc.key_first[0:6] + "9999"
                 else:
                     tc.key_last = str(int(tc2.key_first) - 1).ljust(10, "0")
 
@@ -109,12 +116,13 @@ class RooDocument(object):
         # Create the JSON object
         for tc in table_cells:
             tc.remove_unnecessary_fields()
-            tc.write_to_db()
+            tc.write_table_cell_to_db()
             table_cells2.append(tc.__dict__)
 
         # This takes the data that has been assigned in the 'rules'
         # table and assigns it to the rules_to_commodities table
         self.write_to_commodities_table(table_cells)
+        self.export_to_json()
 
         # All the code below is not used anymore
         # This created data in a format that was initially used for the UK codes, but is no longer valid
@@ -134,13 +142,13 @@ class RooDocument(object):
 
         sql = """
         select sub_heading, heading, description, rule,
-        alternate_rule, quota_amount, quota_unit, key_first, key_last
+        alternate_rule, quota_amount, quota_unit, key_first, key_last, r.id_rule
         from roo.rules_to_commodities rtc, roo.rules r
         where r.id_rule = rtc.id_rule 
         and r.country_prefix = %s
         and r.scope = %s
         and rtc.scope = %s
-        order by sub_heading;
+        order by sub_heading, id_rule;
         """
 
         params = [
@@ -157,8 +165,6 @@ class RooDocument(object):
             object["rules"].append(rule.asdict())
             previous_rule = rule
 
-        load_dotenv('.env')
-        export_path = os.getenv('EXPORT_PATH')
         with open(self.dest_filename, 'w') as f:
             json.dump(object, f, indent=4)
         f.close()
@@ -169,7 +175,14 @@ class RooDocument(object):
         # Take the key_last - 1st 6 digits
         # Assign the rule to each code from the exemplar codes, where the key_first and key_last fit into the exemplar_code (1st 6 digits)
         for tc in table_cells:
+            if tc.cell_classification == "200819":
+                a = 1
+            print("Writing row ", tc.cell_classification)
             for ex in self.exemplar_codes:
+                if tc.key_last is None:
+                    tc.key_last = tc.key_first[0:6] + "9999"
+                    a = 1
+                    
                 if tc.key_first[0:6] <= ex.hs_code and tc.key_last[0:6] >= ex.hs_code:
                     a = 1
                     d = Database()
@@ -189,8 +202,11 @@ class RooDocument(object):
                         "uk"
                     ]
                     d.run_query(sql, params)
-                if ex.hs_code > tc.key_last:
-                    break
+                try:
+                    if ex.hs_code > tc.key_last:
+                        break
+                except:
+                    a = 1
             a = 1
 
     def delete_rows_from_roo_table(self):

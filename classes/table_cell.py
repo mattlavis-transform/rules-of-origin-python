@@ -5,8 +5,11 @@ from classes.database import Database
 
 
 class TableCell(object):
-    def __init__(self, id, fetch_descriptions):
+    def __init__(self, id, fetch_descriptions, country_code, country_prefix, index):
+        self.index = index
         self.id = id
+        self.country_code = country_code
+        self.country_prefix = country_prefix
         self.fetch_descriptions = fetch_descriptions
         self.cell_classification = None
         self.cell_description = None
@@ -36,7 +39,10 @@ class TableCell(object):
             for part in parts:
                 if (len(part) > 0):
                     part = part.replace(".", "").strip()
-                    goods_nomenclature_item_id = part + ("0" * (10 - len(part)))
+                    goods_nomenclature_item_id = part.replace("ex.", "")
+                    goods_nomenclature_item_id = goods_nomenclature_item_id.replace("ex", "")
+                    goods_nomenclature_item_id = goods_nomenclature_item_id.replace(" ", "")
+                    goods_nomenclature_item_id = goods_nomenclature_item_id + ("0" * (10 - len(goods_nomenclature_item_id)))
                     part = part.replace("ex.", "ex")
                     if "ex" in part.lower():
                         is_ex = True
@@ -52,22 +58,74 @@ class TableCell(object):
                         identifier = self.cell_description
 
                     elif len(part) == 4: # Heading
-                        identifier = ex_string + "Heading " + part
+                        # identifier = ex_string + "Heading " + part
+                        identifier = ex_string + part
+
                     elif len(part) == 6: # Subheading
                         identifier = ex_string + part[0:4] + "." + part[-2:]
-                        a = 1
+
                     else:
                         identifier = ""
                         
-                    self.description += identifier + ": " + self.get_goods_nomenclature_description(goods_nomenclature_item_id)
+                    self.description += identifier + ": " + self.get_goods_nomenclature_description(goods_nomenclature_item_id) + "\n"
+                    # self.description += self.get_goods_nomenclature_description(goods_nomenclature_item_id)
+
                     if self.cell_specific != "":
+                        self.cell_specific = self.cell_specific.replace("\u2013", "-")
                         self.description += "\n" + self.cell_specific.strip(":")
+                        self.description = self.cell_specific.strip(":")
+
                     self.description += "\n"
-                    a = 1
-            
+
             self.description = self.description.strip("\n")
+            
+    def get_chapter_extents(self):
+        chapter = self.cell_classification.replace("Chapter", "")
+        chapter = chapter.replace("ex", "")
+        chapter = chapter.strip()
+        chapter = chapter.rjust(2, "0")
+        chapter_comm_code = chapter + "00000000"
+        # Get the minimal heading
+        sql = """
+        select left(goods_nomenclature_item_id, 4) as min_heading
+        from goods_nomenclatures gn
+        where producline_suffix = '80'
+        and left(goods_nomenclature_item_id, 2) = %s
+        and goods_nomenclature_item_id != %s
+        order by goods_nomenclature_item_id 
+        limit 1;
+        """
+        d = Database()
+        params = [
+            chapter,
+            chapter_comm_code
+        ]
+        rows = d.run_query(sql, params)
+        if len(rows) > 0:
+            self.key_first = rows[0][0] + "000000"
+            
+        # Get the maximal heading
+        sql = """
+        select left(goods_nomenclature_item_id, 4) as min_heading
+        from goods_nomenclatures gn
+        where producline_suffix = '80'
+        and left(goods_nomenclature_item_id, 2) = %s
+        and goods_nomenclature_item_id != %s
+        order by goods_nomenclature_item_id desc
+        limit 1;
+        """
+        d = Database()
+        params = [
+            chapter,
+            chapter_comm_code
+        ]
+        rows = d.run_query(sql, params)
+        if len(rows) > 0:
+            self.key_last = rows[0][0] + "999999"
+        a = 1
 
     def get_goods_nomenclature_description(self, goods_nomenclature_item_id):
+        # print ("GND", goods_nomenclature_item_id)
         description = "Missing description"
         d = Database()
         sql = """
@@ -88,7 +146,8 @@ class TableCell(object):
         return description
 
     def parse_cell_classification(self):
-        if "Column 1" in self.cell_classification or "SECTION" in self.cell_classification or "Chapter" in self.cell_classification:
+        self.cell_classification = self.cell_classification.replace("to", "-")
+        if "Column 1" in self.cell_classification or "SECTION" in self.cell_classification:
             self.valid = False
         else:
             self.valid = True
@@ -100,7 +159,7 @@ class TableCell(object):
         self.heading = self.cell_classification
 
         del self.product_specific_rules
-        del self.cell_classification
+        # del self.cell_classification
         del self.cell_description
         del self.cell_psr
         del self.fetch_descriptions
@@ -110,13 +169,17 @@ class TableCell(object):
 
     def set_commodity_range(self):
         # Check for hyphens - if there is a hyphen, then there is a range already
-        if "-" in self.cell_classification:
+        if "Chapter" in self.cell_classification:
+            self.get_chapter_extents()
+            
+        elif "-" in self.cell_classification:
             parts = self.cell_classification.split("-")
             if len(parts) == 2:
                 for i in range(0, 2):
                     parts[i] = parts[i].strip()
                     parts[i] = parts[i].replace(".", "")
                     parts[i] = parts[i].replace(" ", "")
+                    parts[i] = parts[i].replace("ex", "")
 
                 parts[0] += "0" * (10 - len(parts[0]))
                 parts[1] += "9" * (10 - len(parts[1]))
@@ -130,16 +193,36 @@ class TableCell(object):
                 single_part = True
             hyphen = True
         else:
-            a = 1
             self.cell_classification = self.cell_classification.strip()
             self.cell_classification = self.cell_classification.replace(".", "")
             self.cell_classification = self.cell_classification.replace(" ", "")
+            self.cell_classification = self.cell_classification.replace("ex.", "")
+            self.cell_classification = self.cell_classification.replace("ex", "")
             self.key_first = self.cell_classification
             self.key_first += "0" * (10 - len(self.key_first))
             self.key_last = None
-        print("Classification:", self.cell_classification, "First key:", self.key_first, "Last key:", self.key_last)
+            
+            if self.key_first[-6:] == "000000":
+                self.key_last = self.key_first[0:4] + "999999"
+            elif self.key_first[-4:] == "0000":
+                self.key_last = self.key_first[0:6] + "9999"
+
+        print(self.mstr(self.index, 4), "Classification:", self.mstr(self.cell_classification, 20), "Key first:", self.mstr(self.key_first, 20), "Key last:", self.mstr(self.key_last, 20))
+        a = 1
         
-    def write_to_db(self):
+    def mstr(self, s, count = None):
+        if s is None:
+            s = ""
+        else:
+            s = str(s)
+            s = s.strip()
+            
+        if count is None:
+            return s
+        else:
+            return s.ljust(count)
+        
+    def write_table_cell_to_db(self):
         d = Database()
         sql = """
         insert into roo.rules
@@ -157,8 +240,8 @@ class TableCell(object):
         """
         params = [
             "uk",
-            "eu",
-            "eu",
+            self.country_code,
+            self.country_prefix,
             self.heading,
             self.description,
             self.key_first,
@@ -202,6 +285,7 @@ class Rule(object):
             self.quota_unit = None
             self.key_first = None
             self.key_last = None
+            self.id_rule = None
         else:
             self.sub_heading = row[0]
             self.heading = row[1]
@@ -212,6 +296,7 @@ class Rule(object):
             self.quota_unit = row[6]
             self.key_first = row[7]
             self.key_last = row[8]
+            self.id_rule = row[9]
 
     def equates_to(self, rule):
         equal = True
@@ -244,5 +329,6 @@ class Rule(object):
             'quota_amount': self.quota_amount,
             'quota_unit': self.quota_unit,
             'key_first': self.key_first,
-            'key_last': self.key_last
+            'key_last': self.key_last,
+            'id_rule': self.id_rule
         }
