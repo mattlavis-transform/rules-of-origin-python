@@ -109,12 +109,16 @@ class RooDocument(object):
                 elif tc.key_first[-4:] == "0000":
                     tc.key_last = tc.key_first[0:6] + "9999"
                 else:
-                    tc.key_last = str(int(tc2.key_first) - 1).ljust(10, "0")
+                    try:
+                        tc.key_last = str(int(tc2.key_first) - 1).ljust(10, "0")
+                    except:
+                        tc.key_last = None
 
         self.delete_rows_from_roo_table()
 
         # Create the JSON object
         for tc in table_cells:
+            tc.pick_out_key_terms()
             tc.remove_unnecessary_fields()
             tc.write_table_cell_to_db()
             table_cells2.append(tc.__dict__)

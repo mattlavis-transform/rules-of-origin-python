@@ -108,5 +108,5 @@ csv/
 temp/
 .vscode/
 .DS_Store
-schemes.md
+SCHEMES.md
 resources/

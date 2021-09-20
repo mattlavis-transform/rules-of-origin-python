@@ -273,6 +273,45 @@ class TableCell(object):
                 self.product_specific_rules[i] = re.sub(r'^or', ' ', self.product_specific_rules[i])
                 self.product_specific_rules[i] = re.sub(r'MaxNOM ([0-9]{1,3})%', 'The maximum value of non-originating materials (MaxNOM) is no more than \\1%', self.product_specific_rules[i])
 
+    def pick_out_key_terms(self):
+        # ex-works price
+        if "A change from any other heading" in self.description:
+            self.description += "{{EXW}}"
+            
+        # For Canada - CTH
+        if "A change from any other heading" in self.description:
+            self.description = self.description.replace("A change from any other heading", "A change from any other heading (CTH)")
+            self.description += "{{CTH}}"
+            
+        # For Japan - CTH
+        elif "CTH" in self.description:
+            self.description = self.description.replace("CTH", "A change from any other heading (CTH)")
+            self.description += "{{CTH}}"
+
+        # For Canada - CTSH
+        if "A change from any other subheading" in self.description:
+            self.description = self.description.replace("A change from any other subheading", "A change from any other subheading (CTSH)")
+            self.description += "{{CTSH}}"
+            
+        # For Japan - CTSH
+        elif "CTSH" in self.description:
+            self.description = self.description.replace("CTSH", "A change from any other subheading (CTSH)")
+            self.description += "{{CTSH}}"
+
+        # For Japan - CTH
+        if "RVC" in self.description:
+            self.description = self.description.replace("RVC", "Regional Value Content (RVC)")
+            
+        if "wholly obtained" in self.description:
+            self.description += "{{WO}}"
+
+        # if self.rules[i]["quota"]["amount"] != None:
+        #     self.rules[i]["description_string"] = self.rules[i]["description_string"] + "{{RELAX}}"
+
+        self.description = self.description.replace(" ;", ";")
+        self.description = self.description.replace("; ", ";\n\n")
+
+
 class Rule(object):
     def __init__(self, row = None):
         if row is None:
