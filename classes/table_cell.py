@@ -21,6 +21,7 @@ class TableCell(object):
         self.key_first = None
         self.key_last = None
         self.valid = False
+        self.column_count = 0
         self.product_specific_rules = []
         self.lookup = Lookup().lookup
 
@@ -68,7 +69,6 @@ class TableCell(object):
                         identifier = ""
                         
                     self.description += identifier + ": " + self.get_goods_nomenclature_description(goods_nomenclature_item_id) + "\n"
-                    # self.description += self.get_goods_nomenclature_description(goods_nomenclature_item_id)
 
                     if self.cell_specific != "":
                         self.cell_specific = self.cell_specific.replace("\u2013", "-")
@@ -85,6 +85,7 @@ class TableCell(object):
         chapter = chapter.strip()
         chapter = chapter.rjust(2, "0")
         chapter_comm_code = chapter + "00000000"
+        
         # Get the minimal heading
         sql = """
         select left(goods_nomenclature_item_id, 4) as min_heading
@@ -122,11 +123,10 @@ class TableCell(object):
         rows = d.run_query(sql, params)
         if len(rows) > 0:
             self.key_last = rows[0][0] + "999999"
-        a = 1
 
     def get_goods_nomenclature_description(self, goods_nomenclature_item_id):
         # print ("GND", goods_nomenclature_item_id)
-        description = "Missing description"
+        description = self.cell_classification # "Missing description"
         d = Database()
         sql = """
         select gnd.description, gnd.productline_suffix
@@ -207,7 +207,9 @@ class TableCell(object):
             elif self.key_first[-4:] == "0000":
                 self.key_last = self.key_first[0:6] + "9999"
 
-        print(self.mstr(self.index, 4), "Classification:", self.mstr(self.cell_classification, 20), "Key first:", self.mstr(self.key_first, 20), "Key last:", self.mstr(self.key_last, 20))
+        if "84.25" in self.cell_classification:
+            a = 1
+        print(self.mstr(self.index, 4), self.mstr(self.column_count, 3), "Classification:", self.mstr(self.cell_classification, 20), "Key first:", self.mstr(self.key_first, 20), "Key last:", self.mstr(self.key_last, 20))
         a = 1
         
     def mstr(self, s, count = None):
@@ -253,10 +255,12 @@ class TableCell(object):
 
     def parse_cell_psr(self):
         self.cell_psr = self.cell_psr.replace("\t", " ")
-        # self.cell_psr = re.sub("\s+", " ", self.cell_psr)
         self.cell_psr = self.cell_psr.replace(" %", "%")
         self.cell_psr = self.cell_psr.replace("; and\n", " _and_\n")
         self.cell_psr_original = self.cell_psr
+        
+        # Get rid of footnote references
+        self.cell_psr = re.sub(r'\([0-9]{1,3}\)', " ", self.cell_psr)
 
         self.rule_of_origin = self.cell_psr
 

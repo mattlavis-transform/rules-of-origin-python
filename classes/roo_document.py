@@ -44,7 +44,7 @@ class RooDocument(object):
             self.roo_folder, self.agreement.lower() + "_roo.json")
 
     def load_exemplar_codes(self):
-        # Loads up all of the exemplar codes from the file generated in the 'EU' projectq
+        # Loads up all of the exemplar codes from the file generated in the 'EU' project
         self.exemplar_codes = []
         with open(self.exemplar_codes_path) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
@@ -82,7 +82,15 @@ class RooDocument(object):
             table_cell.cell_classification = table_cell.cell_classification.replace("\n", "")
             table_cell.cell_description = row.cells[1].text
             table_cell.cell_specific = row.cells[2].text
-            table_cell.cell_psr = row.cells[3].text
+            table_cell.cell_psr = row.cells[3].text.strip()
+            table_cell.column_count = len(row.cells)
+            
+            if table_cell.cell_psr == "":
+                print (row.cells[0].text, "has an empty product-specific rule - please correct")
+                sys.exit()
+            elif table_cell.cell_psr == "Blank":
+                table_cell.cell_psr = ""
+                
 
             if table_cell.cell_classification != "Classification":
                 table_cell.parse()
@@ -101,8 +109,6 @@ class RooDocument(object):
         for i in range(0, len(table_cells) - 1):
             tc = table_cells[i]
             tc2 = table_cells[i]
-            if "09.01" in tc.cell_classification:
-                a = 1
             if tc.key_last is None:
                 if tc.key_first[-6:] == "000000":
                     tc.key_last = tc.key_first[0:4] + "999999"
@@ -188,7 +194,8 @@ class RooDocument(object):
                     a = 1
                     
                 if tc.key_first[0:6] <= ex.hs_code and tc.key_last[0:6] >= ex.hs_code:
-                    a = 1
+                    if tc.id is None:
+                        a = 1
                     d = Database()
                     sql = """
                     insert into roo.rules_to_commodities
