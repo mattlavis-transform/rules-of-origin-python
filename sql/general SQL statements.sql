@@ -515,7 +515,22 @@ order by "scope" desc, country_prefix, id_rule
 )
 select distinct(country_prefix) from cte where scope = 'xi';
 
-select * from roo.rules where country_code = 'KE';
+select * from roo.rules
+where country_code = 'MX'
+order by date_created desc;
+
+select * from roo.rules where rule ilike '%CTH}%'
+
+select rule 
+from roo.rules
+where rule like '%CTH%'
+and country_code = 'GB';
+
+
+select current_timestamp 
+
+
+select * from roo.rules where country_prefix = 'eu';
 
 
 -- COPY ROO WHERE THE EU DATA IS IN THE OLD STYLE ONLY (classic)

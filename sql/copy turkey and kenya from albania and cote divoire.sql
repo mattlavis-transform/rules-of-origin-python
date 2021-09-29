@@ -9,7 +9,7 @@
  */
 
 delete from roo.rules where scope = 'xi' and country_code = 'KE';
-delete from roo.rules_to_commodities where scope = 'xi' and country_prefix = 'turkey';
+delete from roo.rules_to_commodities where scope = 'xi' and country_prefix = 'kenya';
 
 
 insert into roo.rules

@@ -68,7 +68,11 @@ class TableCell(object):
                     else:
                         identifier = ""
                         
-                    self.description += identifier + ": " + self.get_goods_nomenclature_description(goods_nomenclature_item_id) + "\n"
+                    identifier = identifier.strip()
+                    if identifier != "":
+                        self.description += identifier + ": " + self.get_goods_nomenclature_description(goods_nomenclature_item_id) + "\n"
+                    else:
+                        self.description += self.get_goods_nomenclature_description(goods_nomenclature_item_id) + "\n"
 
                     if self.cell_specific != "":
                         self.cell_specific = self.cell_specific.replace("\u2013", "-")
@@ -125,8 +129,7 @@ class TableCell(object):
             self.key_last = rows[0][0] + "999999"
 
     def get_goods_nomenclature_description(self, goods_nomenclature_item_id):
-        # print ("GND", goods_nomenclature_item_id)
-        description = self.cell_classification # "Missing description"
+        description = self.cell_classification # This used to say "Missing description"
         d = Database()
         sql = """
         select gnd.description, gnd.productline_suffix
@@ -278,42 +281,51 @@ class TableCell(object):
                 self.product_specific_rules[i] = re.sub(r'MaxNOM ([0-9]{1,3})%', 'The maximum value of non-originating materials (MaxNOM) is no more than \\1%', self.product_specific_rules[i])
 
     def pick_out_key_terms(self):
-        # ex-works price
-        if "A change from any other heading" in self.description:
-            self.description += "{{EXW}}"
+        # EXW
+        if "EXW" in self.rule_of_origin:
+            self.rule_of_origin += "{{EXW}}"
+            
+        # Max NOM
+        if "MaxNOM" in self.rule_of_origin:
+            self.rule_of_origin = self.rule_of_origin.replace("MaxNOM", "Maximum of non-originating materials - MaxNOM")
+            
+        # CC
+        if "CC" in self.rule_of_origin:
+            self.rule_of_origin = self.rule_of_origin.replace("CC", "Change of chapter - CC")
+            self.rule_of_origin += "{{CC}}"
             
         # For Canada - CTH
-        if "A change from any other heading" in self.description:
-            self.description = self.description.replace("A change from any other heading", "A change from any other heading (CTH)")
-            self.description += "{{CTH}}"
+        if "A change from any other heading" in self.rule_of_origin:
+            self.rule_of_origin = self.rule_of_origin.replace("A change from any other heading", "A change from any other heading - CTH")
+            self.rule_of_origin += "{{CTH}}"
             
         # For Japan - CTH
-        elif "CTH" in self.description:
-            self.description = self.description.replace("CTH", "A change from any other heading (CTH)")
-            self.description += "{{CTH}}"
+        elif "CTH" in self.rule_of_origin:
+            self.rule_of_origin = self.rule_of_origin.replace("CTH", "A change from any other heading  - CTH")
+            self.rule_of_origin += "{{CTH}}"
 
         # For Canada - CTSH
-        if "A change from any other subheading" in self.description:
-            self.description = self.description.replace("A change from any other subheading", "A change from any other subheading (CTSH)")
-            self.description += "{{CTSH}}"
+        if "A change from any other subheading" in self.rule_of_origin:
+            self.rule_of_origin = self.rule_of_origin.replace("A change from any other subheading", "A change from any other subheading - CTSH")
+            self.rule_of_origin += "{{CTSH}}"
             
         # For Japan - CTSH
-        elif "CTSH" in self.description:
-            self.description = self.description.replace("CTSH", "A change from any other subheading (CTSH)")
-            self.description += "{{CTSH}}"
+        elif "CTSH" in self.rule_of_origin:
+            self.rule_of_origin = self.rule_of_origin.replace("CTSH", "A change from any other subheading - CTSH")
+            self.rule_of_origin += "{{CTSH}}"
 
-        # For Japan - CTH
-        if "RVC" in self.description:
-            self.description = self.description.replace("RVC", "Regional Value Content (RVC)")
+        # For Japan - RVC
+        if "RVC" in self.rule_of_origin:
+            self.rule_of_origin = self.rule_of_origin.replace("RVC", "Regional Value Content - RVC")
             
-        if "wholly obtained" in self.description:
-            self.description += "{{WO}}"
+        if "wholly obtained" in self.rule_of_origin:
+            self.rule_of_origin += "{{WO}}"
 
         # if self.rules[i]["quota"]["amount"] != None:
         #     self.rules[i]["description_string"] = self.rules[i]["description_string"] + "{{RELAX}}"
 
-        self.description = self.description.replace(" ;", ";")
-        self.description = self.description.replace("; ", ";\n\n")
+        self.rule_of_origin = self.rule_of_origin.replace(" ;", ";")
+        self.rule_of_origin = self.rule_of_origin.replace("; ", ";\n\n")
 
 
 class Rule(object):
