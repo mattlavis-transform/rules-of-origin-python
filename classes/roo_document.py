@@ -19,6 +19,8 @@ class RooDocument(object):
         self.get_schemes()
 
     def get_args(self):
+        # Get the folder locations and the name & Word file of the
+        # agreement from the calling arguments
         if len(sys.argv) < 3:
             print("Please specify a source file and the name of the agreement")
             sys.exit()
@@ -62,7 +64,6 @@ class RooDocument(object):
         data = json.load(f)
         for item in data["schemes"]:
             if item["scheme_code"].upper() == self.agreement.upper():
-                # if item["code"].upper() == self.agreement.upper():
                 self.rule_offset = item["rule_offset"]
                 self.country_prefix = item["scheme_code"]
                 self.country_code = item["country_code"]
@@ -103,6 +104,9 @@ class RooDocument(object):
                  break
 
         # Sort the rules by low code
+        for c in table_cells:
+            if c.key_first is None:
+                a = 1
         table_cells.sort(key=lambda x: x.key_first, reverse=False)
 
         # Fill in the missing key_last values

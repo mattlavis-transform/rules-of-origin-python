@@ -583,3 +583,120 @@ select id_rule, sub_heading, 'turkey', "scope"
 from roo.rules_to_commodities
 where country_prefix = 'albania'
 and scope = 'xi';
+
+
+	select * from measure_types where measure_type_id = '109'
+	
+select distinct m.geographical_area_id, ga.description 
+from utils.materialized_measures_real_end_dates m, utils.geographical_areas ga 
+where m.validity_end_date is null
+and m.geographical_area_sid = ga.geographical_area_sid 
+and length(m.geographical_area_id) = 4
+order by 1;
+
+select * from measure_type_descriptions mtd where description ilike '%ultu%'
+
+
+select length(description), gnd.goods_nomenclature_item_id, gnd.description 
+from goods_nomenclature_descriptions gnd, goods_nomenclatures gn 
+where gnd.goods_nomenclature_sid = gn.goods_nomenclature_sid 
+and gn.validity_end_date is null
+order by length(description) asc
+limit 10;
+
+select mt.measure_type_id, mtd.description, mt.measure_type_series_id, count(m.*)
+from utils.materialized_measures_real_end_dates m, measure_types mt, measure_type_descriptions mtd 
+where m.validity_end_date is null 
+and m.measure_type_id = mt.measure_type_id 
+and mt.measure_type_id = mtd.measure_type_id 
+group by mt.measure_type_id, mtd.description, mt.measure_type_series_id
+order by 3, 1;
+
+select measure_type_id, description 
+from measure_type_descriptions mtd where description ilike '%waste'
+
+select * from measures
+where measure_sid = 2481473;
+
+select * from measure_components
+where measure_sid = 2481473;
+
+select * from duty_expression_descriptions ded 
+
+SELECT * FROM "measures"
+WHERE (("goods_nomenclature_item_id" IS NULL)
+AND ("measure_type_id" IN ('672', '673', '674')) AND ("additional_code_type_id" IN ('7'))
+AND ("geographical_area_id" = 'CL'))
+
+
+select * from geographical_area_descriptions gad where description like '%erse%'
+
+
+select goods_nomenclature_item_id
+from utils.materialized_measures_real_end_dates m
+where m.validity_end_date is null
+and m.measure_type_id in ('109', '110')
+order by goods_nomenclature_item_id 
+
+
+select * from measures m, measure_types mt
+where m.measure_type_id = mt.measure_type_id 
+and mt.measure_type_series_id in ('A', 'B')
+and m.validity_start_date > current_date 
+
+
+select * from footnote_descriptions fd 
+--where description ilike '%curde%'
+where footnote_type_id = 'TN'
+and footnote_id = '207';
+
+update footnote_descriptions
+set description = 'The export of arms and WMD-related items; Aviation fuels; Condensates and natural gas liquid; Crude oil; Helicopters and vessels; Industrial machinery, vehicles, iron, steel and other metals; luxury goods; Refined petroleum products; gold and precious metals or diamonds to the Democratic People’s Republic of Korea is controlled (as well as related activities). Please refer to the <a href="https://www.gov.uk/government/collections/uk-sanctions-on-the-democratic-peoples-republic-of-korea">Sanctions</a> to determine whether your items are controlled and whether you need a licence from the <a href="https://www.gov.uk/government/organisations/export-control-organisation">Export Control Joint Unit</a>.'
+where footnote_type_id = 'TN'
+and footnote_id = '207';
+
+select * from measures
+where measure_type_id = '110'
+and validity_end_date is null;
+
+select measure_type_id, description 
+from measure_type_descriptions mtd
+where description ilike '%uppl%'
+order by 1;
+
+select measure_sid, goods_nomenclature_item_id, geographical_area_id 
+from utils.materialized_measures_real_end_dates m
+where m.measure_type_id = '110'
+and m.validity_end_date is null;
+
+select m.measure_sid, m.goods_nomenclature_item_id, m.geographical_area_id, m.reduction_indicator,
+m.measure_type_id, m.validity_start_date 
+from utils.materialized_measures_real_end_dates m, measure_components mc 
+where m.measure_sid = mc.measure_sid 
+and m.goods_nomenclature_item_id is not null
+and (m.validity_end_date is null or m.validity_end_date::date > current_date)
+and m.reduction_indicator > 2;
+
+with footnotes as (
+	select distinct on (fd.footnote_type_id, fd.footnote_id)
+	fd.footnote_type_id, fd.footnote_id, fd.description 
+	from footnote_descriptions fd, footnote_description_periods fdp 
+	where fd.footnote_type_id = fdp.footnote_type_id
+	and fd.footnote_id = fdp.footnote_id
+	order by fd.footnote_type_id, fd.footnote_id, fdp.validity_start_date desc
+)
+select distinct f.footnote_type_id, f.footnote_id, f.description from
+utils.materialized_measures_real_end_dates m, footnote_association_measures fam, footnotes f
+where fam.measure_sid = m.measure_sid
+and fam.footnote_type_id = f.footnote_type_id 
+and fam.footnote_id = f.footnote_id 
+and m.validity_end_date is null;
+
+select * from measure_type_descriptions mtd order by 1;
+
+
+select * from measurement_unit_descriptions mud;
+select * from measurement_unit_abbreviations mua 
+
+
+select * from measure_conditions mc 

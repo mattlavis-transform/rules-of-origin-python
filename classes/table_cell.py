@@ -210,7 +210,7 @@ class TableCell(object):
             elif self.key_first[-4:] == "0000":
                 self.key_last = self.key_first[0:6] + "9999"
 
-        if "84.25" in self.cell_classification:
+        if "and" in self.cell_classification:
             a = 1
         print(self.mstr(self.index, 4), self.mstr(self.column_count, 3), "Classification:", self.mstr(self.cell_classification, 20), "Key first:", self.mstr(self.key_first, 20), "Key last:", self.mstr(self.key_last, 20))
         a = 1
